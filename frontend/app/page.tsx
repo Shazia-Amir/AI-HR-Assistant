@@ -19,8 +19,8 @@ export default function HomePage() {
             <Link href="/login">
               <Button variant="ghost" size="sm">Sign In</Button>
             </Link>
-            <Link href="/chat">
-              <Button variant="gradient" size="sm">Start Chatting</Button>
+            <Link href="/signup">
+              <Button variant="gradient" size="sm">Create Account</Button>
             </Link>
           </div>
         </div>
@@ -42,16 +42,16 @@ export default function HomePage() {
             Get accurate answers powered by RAG technology — no more digging through handbooks.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link href="/chat">
+            <Link href="/login">
               <Button variant="gradient" size="lg" className="w-full sm:w-auto">
                 <MessageSquare className="mr-2 h-5 w-5" />
                 Start Chatting
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/signup">
               <Button variant="outline" size="lg" className="w-full sm:w-auto">
                 <BarChart3 className="mr-2 h-5 w-5" />
-                HR Dashboard
+                Create Account
               </Button>
             </Link>
           </div>

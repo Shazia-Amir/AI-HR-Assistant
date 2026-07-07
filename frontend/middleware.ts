@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isAuthPage = pathname === "/login" || pathname === "/signup";
-  const isChatPage = pathname === "/" || pathname.startsWith("/chat");
+  const isChatPage = pathname.startsWith("/chat");
   const isDashboardPage = pathname.startsWith("/dashboard");
   const isApiRoute = pathname.startsWith("/api");
 
@@ -37,14 +37,16 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  if (!session && isDashboardPage) {
+  // Protect both chat and dashboard — must be signed in
+  if (!session && (isChatPage || isDashboardPage)) {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
+  // Already signed in — send away from auth pages
   if (session && isAuthPage) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL("/chat", request.url));
   }
 
   return response;

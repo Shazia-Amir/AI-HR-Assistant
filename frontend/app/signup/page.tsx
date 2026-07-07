@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Brain, Loader2, Lock, Mail } from "lucide-react";
+import { Brain, Loader2, Lock, Mail, User } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { createSupabaseBrowserClient } from "@/lib/supabase-browser";
@@ -14,34 +14,36 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-const loginSchema = z.object({
+const signupSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  confirmPassword: z.string(),
+}).refine((d) => d.password === d.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
 });
 
-type LoginValues = z.infer<typeof loginSchema>;
+type SignupValues = z.infer<typeof signupSchema>;
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
 
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
+  const { register, handleSubmit, formState: { errors } } = useForm<SignupValues>({
+    resolver: zodResolver(signupSchema),
   });
 
-  const fillDemo = () => {
-    setValue("email", "demo@hrapp.com");
-    setValue("password", "demo123");
-  };
-
-  const onSubmit = async (values: LoginValues) => {
+  const onSubmit = async (values: SignupValues) => {
     setLoading(true);
     try {
       const supabase = createSupabaseBrowserClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
+        options: {
+          data: { name: values.name },
+        },
       });
 
       if (error) {
@@ -49,9 +51,8 @@ export default function LoginPage() {
         return;
       }
 
-      toast.success("Welcome back!");
-      const redirect = searchParams.get("redirect") || "/chat";
-      router.push(redirect);
+      toast.success("Account created! You can now sign in.");
+      router.push("/chat");
       router.refresh();
     } catch {
       toast.error("An unexpected error occurred");
@@ -75,26 +76,25 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md glass-card">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">Sign In</CardTitle>
-          <CardDescription>Sign in to access the HR Assistant</CardDescription>
+          <CardTitle className="text-2xl">Create Account</CardTitle>
+          <CardDescription>Sign up to access the AI HR Assistant</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Demo credentials banner */}
-          <button
-            type="button"
-            onClick={fillDemo}
-            className="w-full rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-left text-sm transition-colors hover:bg-indigo-500/20"
-          >
-            <p className="font-medium text-indigo-400">Try the demo account</p>
-            <p className="mt-0.5 text-muted-foreground">
-              Email: <span className="font-mono text-foreground">demo@hrapp.com</span>
-              {" · "}
-              Password: <span className="font-mono text-foreground">demo123</span>
-            </p>
-            <p className="mt-1 text-xs text-indigo-400/70">Click to fill credentials automatically</p>
-          </button>
-
+        <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  {...register("name")}
+                  type="text"
+                  placeholder="Jane Smith"
+                  className="pl-10"
+                />
+              </div>
+              {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
+            </div>
+
             <div className="space-y-2">
               <label className="text-sm font-medium">Email</label>
               <div className="relative">
@@ -123,13 +123,27 @@ export default function LoginPage() {
               {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
             </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Confirm Password</label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  {...register("confirmPassword")}
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-10"
+                />
+              </div>
+              {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>}
+            </div>
+
             <Button type="submit" variant="gradient" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? "Creating account..." : "Create Account"}
             </Button>
           </form>
 
-          <div className="relative">
+          <div className="relative mt-4">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
             </div>
@@ -138,10 +152,10 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="font-medium text-indigo-400 hover:text-indigo-300 underline underline-offset-4">
-              Create account
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link href="/login" className="font-medium text-indigo-400 hover:text-indigo-300 underline underline-offset-4">
+              Sign in
             </Link>
           </p>
         </CardContent>
