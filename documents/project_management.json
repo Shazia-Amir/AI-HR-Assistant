@@ -1,0 +1,120 @@
+{
+  "policy_name": "Project Management & Development Policy",
+  "version": "1.0",
+  "last_updated": "2025-01-01",
+  "agile": {
+    "framework": "Agile",
+    "sprint_duration_weeks": 2,
+    "ceremonies": ["Sprint Planning", "Daily Standup", "Sprint Review", "Sprint Retrospective"],
+    "roles": ["Product Owner", "Scrum Master", "Development Team"],
+    "definition_of_done": "Code complete, tested, code reviewed, documented, deployed to staging"
+  },
+  "scrum": {
+    "sprint_planning": {
+      "participants": ["Product Owner", "Scrum Master", "Development Team"],
+      "max_duration_hours": 4,
+      "outputs": ["Sprint Backlog", "Sprint Goal", "Task Breakdown"]
+    },
+    "daily_standup": {
+      "duration_minutes": 15,
+      "time": "10:00 AM",
+      "questions": ["What did I do yesterday?", "What will I do today?", "Are there any blockers?"]
+    },
+    "sprint_review": {
+      "timing": "Last day of sprint",
+      "purpose": "Demo completed work to stakeholders"
+    },
+    "sprint_retrospective": {
+      "timing": "After Sprint Review",
+      "format": "What went well, what didn't, action items"
+    },
+    "story_points": [1, 2, 3, 5, 8, 13, 21],
+    "backlog_grooming_hours_per_sprint": 1
+  },
+  "jira": {
+    "purpose": "Project management and issue tracking",
+    "board_types": ["Scrum", "Kanban"],
+    "issue_types": ["Epic", "Story", "Task", "Bug", "Sub-task"],
+    "workflow_states": ["To Do", "In Progress", "In Review", "Done"],
+    "required_fields": ["Assignee", "Story Points", "Sprint", "Labels", "Description", "Acceptance Criteria"]
+  },
+  "asana": {
+    "purpose": "Non-development project management",
+    "structure": ["Projects", "Sections", "Tasks", "Subtasks"],
+    "views": ["List", "Board", "Timeline", "Calendar"],
+    "integrations": ["Slack", "Google Drive"]
+  },
+  "documentation": {
+    "tools": ["Confluence", "Notion"],
+    "required_documents": [
+      "Project Charter",
+      "Technical Design Document",
+      "API Documentation",
+      "User Guide",
+      "Post-Mortem Report"
+    ],
+    "code_documentation": "Inline comments, JSDoc/Python docstrings",
+    "readme_required": true
+  },
+  "pull_requests": {
+    "mandatory": true,
+    "no_direct_commits_to": ["main", "develop"],
+    "min_reviewers": 2,
+    "min_senior_reviewers": 1,
+    "review_response_time_hours": 24,
+    "self_review_required": true,
+    "approvals_required": 2,
+    "max_diff_lines": 400,
+    "ci_cd_must_pass": true
+  },
+  "git_workflow": {
+    "strategy": "Git Flow",
+    "branches": {
+      "main": "Production-ready code",
+      "develop": "Integration branch for features",
+      "feature": "Individual feature development",
+      "release": "Preparation for production release",
+      "hotfix": "Emergency fixes for production"
+    },
+    "branch_naming": {
+      "feature": "feature/PROJ-123-short-description",
+      "bugfix": "bugfix/PROJ-123-short-description",
+      "hotfix": "hotfix/PROJ-123-short-description",
+      "release": "release/v1.2.0"
+    },
+    "commit_format": "type(scope): description",
+    "commit_types": ["feat", "fix", "docs", "style", "refactor", "test", "chore"],
+    "merge_strategy": {
+      "feature": "Squash and merge",
+      "release": "Merge commit"
+    }
+  },
+  "code_reviews": {
+    "focus_areas": ["Logic correctness", "Performance", "Security", "Readability", "Test coverage", "Coding standards"],
+    "max_time_per_pr_hours": 1,
+    "nitpick_label": "nit",
+    "escalation": "Tech lead for disagreements"
+  },
+  "release_process": {
+    "steps": [
+      {"step": 1, "action": "Release planning by Product Owner and Tech Lead"},
+      {"step": 2, "action": "Create release branch from develop"},
+      {"step": 3, "action": "Deploy to staging environment"},
+      {"step": 4, "action": "QA testing - regression, integration, UAT"},
+      {"step": 5, "action": "Fix critical bugs on release branch"},
+      {"step": 6, "action": "Prepare release notes"},
+      {"step": 7, "action": "Product Owner approval"},
+      {"step": 8, "action": "Merge to main, deploy to production"},
+      {"step": 9, "action": "Tag main branch with version"},
+      {"step": 10, "action": "Merge release branch back to develop"},
+      {"step": 11, "action": "Monitor production for 48 hours"},
+      {"step": 12, "action": "Release retrospective"}
+    ],
+    "versioning": {
+      "format": "MAJOR.MINOR.PATCH",
+      "major": "Breaking changes or major new features",
+      "minor": "New features, backward compatible",
+      "patch": "Bug fixes, backward compatible"
+    }
+  }
+}

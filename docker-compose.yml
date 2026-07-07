@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hr-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+      - ./documents:/app/documents
+      - vectorstore_data:/app/vectorstore
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hr-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    restart: unless-stopped
+    depends_on:
+      - backend
+    command: npm run dev
+
+volumes:
+  vectorstore_data:

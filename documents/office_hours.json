@@ -1,0 +1,78 @@
+{
+  "policy_name": "Office Hours & Work Policy",
+  "version": "1.0",
+  "last_updated": "2025-01-01",
+  "working_hours": {
+    "start_time": "9:00 AM IST",
+    "end_time": "6:00 PM IST",
+    "days": "Monday to Friday",
+    "total_hours_per_week": 45,
+    "hours_per_day": 9,
+    "core_hours": "10:30 AM to 4:30 PM",
+    "grace_period_minutes": 15,
+    "lunch_break": "1 hour (12:30 PM - 2:00 PM window)"
+  },
+  "flexible_hours": {
+    "arrival_window": "8:00 AM to 10:30 AM",
+    "required_working_hours_per_day": 8,
+    "approval_required": true,
+    "core_hours_mandatory": true
+  },
+  "attendance": {
+    "method": "Biometric or HR portal",
+    "missed_attendance_request_window_hours": 24,
+    "minimum_attendance_percentage": 90,
+    "half_day_threshold_hours": 5
+  },
+  "time_tracking": {
+    "tool": "Jira/Timesheet portal",
+    "logging_frequency": "Daily by end of day",
+    "review": "Weekly every Monday",
+    "project_codes_required": true
+  },
+  "remote_work": {
+    "eligibility": "3 months completed, role permits",
+    "max_days_per_month": 8,
+    "request_advance_days": 1,
+    "availability_required": "Slack, Email, Phone during working hours",
+    "equipment": "Company-provided laptop and VPN"
+  },
+  "hybrid_work": {
+    "model": "3 days office, 2 days remote",
+    "office_days": ["Tuesday", "Wednesday", "Thursday"],
+    "remote_days": ["Monday", "Friday"],
+    "customization_allowed": true
+  },
+  "work_from_home": {
+    "max_days_per_month": 4,
+    "notification_deadline": "Before 9:00 AM on WFH day",
+    "max_consecutive_days": 2,
+    "purpose": "Unforeseen circumstances"
+  },
+  "late_policy": {
+    "late_threshold": "After 9:15 AM",
+    "monthly_warning_threshold": 3,
+    "half_day_deduction_threshold": "After 11:30 AM",
+    "escalation": [
+      {"instance": 1, "action": "Verbal warning from manager"},
+      {"instance": 2, "action": "Written warning from HR"},
+      {"instance": 3, "action": "Meeting with HR and Department Head"},
+      {"instance": 4, "action": "May impact performance review"}
+    ]
+  },
+  "break_rules": {
+    "lunch_break": "1 hour",
+    "tea_coffee_breaks": "Two 15-minute breaks",
+    "max_total_break_time_hours": 1.5,
+    "max_smoke_breaks_per_day": 4
+  },
+  "overtime": {
+    "definition": "Work beyond 9 hours/day or on weekends/holidays",
+    "prior_approval_required": true,
+    "weekday_compensation": "Comp-off (1 hour OT = 1 hour comp-off, min 4 hours)",
+    "weekend_compensation": "Comp-off (1 day work = 1 day comp-off)",
+    "comp_off_expiry_days": 60,
+    "max_overtime_per_week_hours": 12,
+    "encashment": false
+  }
+}

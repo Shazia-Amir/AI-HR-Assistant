@@ -1,0 +1,98 @@
+{
+  "policy_name": "Leave Policy",
+  "version": "1.0",
+  "last_updated": "2025-01-01",
+  "leave_types": {
+    "annual_leave": {
+      "entitlement_days": 20,
+      "accrual_rate_per_month": 1.67,
+      "eligibility": "Full-time employees after probation (3 months)",
+      "advance_notice_days": 7,
+      "carry_forward_max_days": 5,
+      "carry_forward_expiry": "March 31 of following year",
+      "encashment": "Not available during employment, available on resignation"
+    },
+    "sick_leave": {
+      "entitlement_days": 10,
+      "accrual_rate_per_month": 0.83,
+      "eligibility": "All full-time and part-time employees",
+      "medical_certificate_required_after_days": 2,
+      "notification_time": "Within first 2 hours of workday",
+      "carry_forward": false,
+      "encashment": false
+    },
+    "casual_leave": {
+      "entitlement_days": 5,
+      "purpose": "Personal errands, family events, short commitments",
+      "advance_notice_days": 1,
+      "carry_forward": false,
+      "encashment": false
+    },
+    "emergency_leave": {
+      "entitlement_days": 2,
+      "purpose": "Unforeseen emergencies - accidents, sudden illness, urgent family matters",
+      "notification": "As soon as possible, before workday start",
+      "documentation": "May be required depending on nature",
+      "carry_forward": false
+    },
+    "maternity_leave": {
+      "entitlement_weeks": 26,
+      "entitlement_days": 180,
+      "eligibility": "Female employees with 80+ working days in preceding 12 months",
+      "application_deadline": "8 weeks before expected delivery",
+      "split_allowed": true,
+      "nursing_breaks_per_day": 2,
+      "nursing_break_duration_minutes": 30,
+      "nursing_break_until_child_age_months": 15,
+      "flexible_hours_on_return_months": 2
+    },
+    "paternity_leave": {
+      "entitlement_days": 14,
+      "eligibility": "Male employees with spouse giving birth or adopting",
+      "application_window_days": 30,
+      "consecutive_only": true
+    },
+    "bereavement_leave": {
+      "entitlement_days": 3,
+      "extended_entitlement_days": 5,
+      "extended_for": "Spouse or child",
+      "covered_family_members": ["spouse", "child", "parent", "sibling", "grandparent"],
+      "documentation": "Death certificate may be requested"
+    }
+  },
+  "public_holidays": {
+    "total_days": 10,
+    "floating_holidays": 1,
+    "holidays": [
+      {"name": "New Year's Day", "date": "January 1"},
+      {"name": "Republic Day", "date": "January 26"},
+      {"name": "Holi", "date": "March (varies)"},
+      {"name": "Good Friday", "date": "March/April (varies)"},
+      {"name": "Independence Day", "date": "August 15"},
+      {"name": "Gandhi Jayanti", "date": "October 2"},
+      {"name": "Dussehra", "date": "October (varies)"},
+      {"name": "Diwali", "date": "October/November (varies)"},
+      {"name": "Christmas Day", "date": "December 25"},
+      {"name": "Company Foundation Day", "date": "Varies"}
+    ]
+  },
+  "carry_forward_policy": {
+    "applicable_to": "Annual leave only",
+    "max_days": 5,
+    "expiry": "March 31 of following year",
+    "during_notice_period": false
+  },
+  "leave_approval_workflow": {
+    "steps": [
+      {"step": 1, "actor": "Employee", "action": "Submit leave request via HR portal"},
+      {"step": 2, "actor": "Immediate Manager", "action": "Review and approve/reject within 2 working days"},
+      {"step": 3, "actor": "HR Department", "action": "Automatically notified of approved leaves"},
+      {"step": 4, "actor": "Employee", "action": "Receives email notification of decision"},
+      {"step": 5, "actor": "Department Head", "action": "Handles appeals within 3 working days (final decision)"}
+    ],
+    "cancellation": {
+      "deadline": "1 day before leave start date",
+      "credit_back": true
+    }
+  }
+}

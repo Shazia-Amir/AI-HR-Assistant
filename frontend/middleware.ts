@@ -1,0 +1,55 @@
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll().map((c) => ({
+            name: c.name,
+            value: c.value,
+          }));
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const { pathname } = request.nextUrl;
+  const isAuthPage = pathname === "/login" || pathname === "/signup";
+  const isChatPage = pathname === "/" || pathname.startsWith("/chat");
+  const isDashboardPage = pathname.startsWith("/dashboard");
+  const isApiRoute = pathname.startsWith("/api");
+
+  if (isApiRoute) {
+    return response;
+  }
+
+  if (!session && isDashboardPage) {
+    const redirectUrl = new URL("/login", request.url);
+    redirectUrl.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  if (session && isAuthPage) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+};
