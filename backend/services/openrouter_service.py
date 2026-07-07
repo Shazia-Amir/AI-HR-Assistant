@@ -23,28 +23,32 @@ class OpenRouterService:
     def _build_messages(
         self, question: str, context: str, sources: List[Dict]
     ) -> List[Dict[str, str]]:
+        has_context = len(sources) > 0
+
         system_prompt = (
-            "You are an AI HR Assistant for a company. Your role is to answer "
-            "employee questions about company HR policies accurately and helpfully.\n\n"
-            "CRITICAL RULES:\n"
-            "1. Answer ONLY using the provided context from company HR documents.\n"
-            "2. If the context does not contain relevant information to answer the question, "
-            "respond EXACTLY with: \"I'm sorry, but I couldn't find that information in the "
-            "company's HR documentation. Please contact the HR department.\"\n"
-            "3. Never hallucinate or invent policies, numbers, or procedures.\n"
-            "4. Never answer questions outside the HR knowledge base.\n"
-            "5. Be clear, professional, and concise.\n"
-            "6. When referencing specific policies, mention the source document name.\n"
-            "7. Format responses using Markdown for readability.\n"
+            "You are a friendly and helpful AI HR Assistant for a company. "
+            "You help employees with HR-related questions and also handle general conversation naturally.\n\n"
+            "RULES:\n"
+            "1. For greetings, small talk, or general conversation (e.g. 'Hi', 'Hello', 'How are you', 'Thanks') — "
+            "respond warmly and naturally. You don't need HR documents for this.\n"
+            "2. For HR-related questions where context is provided — answer accurately using ONLY "
+            "the provided HR documents. Mention the source document name when relevant. "
+            "Format responses using Markdown for readability.\n"
+            "3. For HR-related questions where NO relevant context is found — politely explain "
+            "that the specific information isn't in the current HR documentation and suggest "
+            "contacting the HR department. Never invent policies, numbers, or procedures.\n"
+            "4. Be concise, professional, and warm in tone.\n"
         )
 
-        context_text = "Here are the relevant HR policy documents:\n\n"
-        for i, src in enumerate(sources, 1):
-            context_text += f"--- Source {i}: {src.get('document', 'Unknown')} ---\n"
-            context_text += f"Section: {src.get('section', 'N/A')}\n"
-            context_text += f"{src.get('content', '')}\n\n"
-
-        user_prompt = f"{context_text}\n\nEmployee Question: {question}\n\nAnswer based ONLY on the context above."
+        if has_context:
+            context_text = "Relevant HR policy documents:\n\n"
+            for i, src in enumerate(sources, 1):
+                context_text += f"--- Source {i}: {src.get('document', 'Unknown')} ---\n"
+                context_text += f"Section: {src.get('section', 'N/A')}\n"
+                context_text += f"{src.get('content', '')}\n\n"
+            user_prompt = f"{context_text}\nEmployee message: {question}"
+        else:
+            user_prompt = f"Employee message: {question}"
 
         return [
             {"role": "system", "content": system_prompt},
