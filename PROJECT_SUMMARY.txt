@@ -1,0 +1,691 @@
+================================================================================
+                    AI HR ASSISTANT — FULL PROJECT SUMMARY
+================================================================================
+
+Repository:  https://github.com/Shazia-Amir/AI-HR-Assistant
+Author:      Shazia Amir
+License:     MIT
+Version:     1.0.0
+Date:        July 2025
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+
+The AI HR Assistant is a production-ready, full-stack SaaS application that
+allows employees to ask questions about company HR policies and get instant,
+AI-powered answers grounded in actual company documents using Retrieval-
+Augmented Generation (RAG).
+
+Instead of employees browsing through long policy PDFs or waiting days for HR
+to reply to emails, they can simply chat with the AI assistant. The assistant
+reads company HR documents (leave policy, office hours, project management
+guidelines), finds the most relevant sections, and generates accurate answers
+with source citations and confidence scores.
+
+An HR admin dashboard provides real-time analytics — tracking total questions,
+employee activity, AI accuracy, feedback trends, and conversation logs — so HR
+managers can monitor and improve the system.
+
+================================================================================
+2. PROBLEM STATEMENT & SOLUTION
+================================================================================
+
+PROBLEM:
+  - Employees waste time searching through lengthy HR policy documents
+  - HR teams repeatedly answer the same questions (leave rules, office hours,
+    project management procedures)
+  - No centralized, intelligent system to handle HR queries at scale
+  - No analytics on what employees are asking or how accurate the answers are
+
+SOLUTION:
+  - AI chatbot that answers HR questions instantly using RAG (Retrieval-
+    Augmented Generation) — answers are grounded in real company documents,
+    not hallucinated
+  - Every answer includes source citations (which document, which section) and
+    a confidence score so employees know how reliable the answer is
+  - HR admin dashboard with real-time analytics, conversation logs, feedback
+    management, and knowledge base document management
+  - Streaming responses (token-by-token) for a ChatGPT-like experience
+
+================================================================================
+3. TECH STACK & TECHNOLOGIES USED
+================================================================================
+
+FRONTEND:
+  - Next.js 15 (App Router)          — React framework with SSR/SSG
+  - React 18 + TypeScript            — UI library with type safety
+  - Tailwind CSS 4                   — Utility-first CSS framework
+  - shadcn/ui + Radix UI             — Accessible, customizable UI components
+  - Recharts                         — Charts (area, bar, pie, line, radar)
+  - Framer Motion                    — Animations and transitions
+  - React Hook Form + Zod            — Form handling and validation
+  - TanStack Query (React Query)     — Server state management & data fetching
+  - next-themes                      — Dark/light mode toggle
+  - Lucide React                     — Icon library
+  - Sonner                           — Toast notifications
+  - react-markdown                   — Markdown rendering for AI responses
+
+BACKEND:
+  - FastAPI (Python)                 — High-performance async web framework
+  - Uvicorn                          — ASGI server
+  - Pydantic + Pydantic Settings     — Data validation and config management
+  - httpx                            — Async HTTP client for OpenRouter API
+  - LangChain                        — Document loading and text splitting
+  - ChromaDB                         — Vector database for similarity search
+  - sentence-transformers            — Local embeddings (all-MiniLM-L6-v2)
+  - Supabase (Python SDK)            — PostgreSQL database client
+  - slowapi                          — Rate limiting middleware
+
+AI / LLM:
+  - OpenRouter API                   — LLM inference (supports multiple models)
+  - Default model: deepseek/deepseek-chat-v3-0324
+  - Embeddings: all-MiniLM-L6-v2 (384-dimensional, runs locally)
+  - RAG pipeline: document -> chunk -> embed -> store -> retrieve -> generate
+
+DATABASE & AUTH:
+  - Supabase (PostgreSQL)            — Managed Postgres with REST API
+  - Supabase Auth                    — Email/password authentication
+  - Row Level Security (RLS)         — Database-level access control policies
+
+DEVOPS & DEPLOYMENT:
+  - Docker + Docker Compose          — Containerized deployment
+  - .env configuration               — Environment-based config management
+  - CORS middleware                   — Cross-origin request handling
+
+================================================================================
+4. ARCHITECTURE & DATA FLOW
+================================================================================
+
+HIGH-LEVEL ARCHITECTURE:
+
+  [Employee Browser]
+        |
+        v
+  [Next.js Frontend (port 3000)]
+        |
+        |--- /chat          -> Chat interface (employee-facing)
+        |--- /login         -> Supabase Auth login
+        |--- /dashboard/*   -> HR Admin dashboard (protected)
+        |
+        v
+  [FastAPI Backend (port 8000)]
+        |
+        |--- /chat          -> RAG pipeline -> OpenRouter LLM
+        |--- /chat/stream   -> Streaming SSE response
+        |--- /feedback      -> Save to Supabase
+        |--- /stats         -> Analytics engine
+        |--- /analytics     -> Detailed analytics
+        |--- /logs          -> Conversation history
+        |--- /documents     -> Knowledge base management
+        |--- /health        -> Health check
+        |
+        +--- [ChromaDB Vector Store]  (local, persisted)
+        +--- [Supabase PostgreSQL]    (cloud database)
+        +--- [OpenRouter API]         (LLM inference)
+
+RAG PIPELINE FLOW (How AI answers are generated):
+
+  Step 1: DOCUMENT LOADING
+    - HR policy files (.md, .json, .txt) are loaded from /documents folder
+    - Markdown files are split by headers (## sections)
+    - JSON files are flattened into key-value pairs
+    - Each chunk gets metadata: source file, section name, file type
+
+  Step 2: CHUNKING
+    - Documents split into ~1000 character chunks with 200 char overlap
+    - Uses LangChain's RecursiveCharacterTextSplitter
+    - Separators: paragraph -> newline -> sentence -> word -> character
+
+  Step 3: EMBEDDING
+    - Each chunk is converted to a 384-dim vector using all-MiniLM-L6-v2
+    - Embeddings run locally (no API call needed)
+    - SentenceTransformerEmbeddings wraps the model for LangChain compatibility
+
+  Step 4: VECTOR STORAGE
+    - Embeddings stored in ChromaDB (persisted to ./vectorstore directory)
+    - Supports cosine similarity search
+    - Vector store can be rebuilt via POST /documents/rebuild endpoint
+
+  Step 5: RETRIEVAL (when employee asks a question)
+    - Question is embedded using the same model
+    - ChromaDB finds top-5 most similar chunks (cosine similarity)
+    - Chunks with relevance score < 0.1 are filtered out
+    - Retrieved chunks become the "context" for the LLM
+
+  Step 6: GENERATION
+    - System prompt + retrieved context + user question sent to OpenRouter
+    - LLM generates answer using ONLY the provided context (no hallucination)
+    - Temperature: 0.3 (low creativity, high accuracy)
+    - Max tokens: 2000
+
+  Step 7: CITATION & CONFIDENCE
+    - Source documents (name, section, relevance score) returned with answer
+    - Confidence score = average relevance score * 1.2 (capped at 1.0)
+    - Response time measured in milliseconds
+
+STREAMING FLOW (for /chat/stream endpoint):
+    - Server-Sent Events (SSE) used for real-time token streaming
+    - First event: metadata (chat_id, confidence, sources, retrieval time)
+    - Subsequent events: content chunks (token-by-token from LLM)
+    - Final event: done (with chat_id for feedback submission)
+    - Frontend uses Fetch API with ReadableStream to parse SSE events
+
+================================================================================
+5. DATABASE SCHEMA (SUPABASE / POSTGRESQL)
+================================================================================
+
+TABLES:
+
+  1. admin_users
+     - id (UUID, PK)
+     - email (TEXT, UNIQUE)
+     - full_name (TEXT)
+     - role (TEXT: admin / super_admin / hr_manager)
+     - created_at, updated_at (TIMESTAMPTZ)
+
+  2. employees
+     - id (UUID, PK)
+     - name (TEXT)
+     - employee_id (TEXT, UNIQUE)
+     - department, designation (TEXT)
+     - is_active (BOOLEAN)
+     - created_at, updated_at (TIMESTAMPTZ)
+
+  3. hr_documents
+     - id (UUID, PK)
+     - name, type, content, file_path (TEXT)
+     - sections (INT)
+     - uploaded_by (UUID -> admin_users)
+     - created_at, updated_at (TIMESTAMPTZ)
+
+  4. chat_history (MAIN TABLE)
+     - id (UUID, PK)
+     - employee_name, employee_id (TEXT)
+     - question (TEXT)
+     - ai_response (TEXT)
+     - retrieved_context (TEXT)
+     - source_documents (JSONB)
+     - confidence_score (FLOAT)
+     - response_time_ms (INT)
+     - feedback (TEXT: positive / negative / NULL)
+     - feedback_notes (TEXT)
+     - flagged (BOOLEAN)
+     - session_id (UUID)
+     - created_at, updated_at (TIMESTAMPTZ)
+
+  5. ai_feedback
+     - id (UUID, PK)
+     - chat_id (UUID -> chat_history, CASCADE)
+     - feedback_type (TEXT: positive / negative)
+     - notes, given_by (TEXT)
+     - created_at (TIMESTAMPTZ)
+
+  6. analytics
+     - id (UUID, PK)
+     - metric_name (TEXT)
+     - metric_value (FLOAT)
+     - metric_date (DATE)
+
+  7. user_sessions
+     - id (UUID, PK)
+     - employee_id (TEXT)
+     - session data
+     - created_at, updated_at (TIMESTAMPTZ)
+
+SECURITY:
+  - Row Level Security (RLS) enabled on ALL tables
+  - Authenticated users can SELECT/INSERT on chat_history
+  - Service role key bypasses RLS (used by backend only)
+  - Auto-trigger: feedback changes logged to ai_feedback table
+  - Auto-trigger: updated_at column auto-updated on row changes
+
+================================================================================
+6. API ENDPOINTS
+================================================================================
+
+  METHOD  PATH                  DESCRIPTION
+  ------  ----                  -----------
+  POST    /chat                 Send question, get complete AI response
+  POST    /chat/stream          Send question, get streaming SSE response
+  POST    /feedback             Submit feedback (positive/negative/flagged)
+  GET     /stats                Summary statistics (totals, averages)
+  GET     /analytics            Detailed analytics (charts, topics, employees)
+  GET     /logs                 Conversation logs (paginated, searchable)
+  GET     /documents            List knowledge base documents
+  POST    /documents/rebuild    Rebuild RAG vector store from documents
+  GET     /health               Health check (service status)
+  GET     /                     API info (name, version, docs URL)
+  GET     /docs                 Interactive Swagger UI documentation
+
+REQUEST/RESPONSE MODELS:
+
+  ChatRequest:
+    - question (str, 1-2000 chars)
+    - employee_name (str, 1-200 chars)
+    - employee_id (str, 1-100 chars)
+    - session_id (str, optional)
+
+  ChatResponse:
+    - id (str)
+    - answer (str)
+    - confidence (float)
+    - sources (List[SourceDocument])
+    - response_time_ms (int)
+
+  FeedbackRequest:
+    - chat_id (str)
+    - feedback ("positive" | "negative")
+    - flagged (bool)
+    - notes (str, optional)
+
+================================================================================
+7. FRONTEND PAGES & ROUTES
+================================================================================
+
+  ROUTE                        DESCRIPTION
+  -----                        -----------
+  /                            Landing page (hero, features, CTA)
+  /login                       Admin login (Supabase Auth, form validation)
+  /signup                      Admin signup (create new account)
+  /chat                        Main chat interface (employee-facing)
+  /dashboard                   Admin overview (stat cards, charts, activity)
+  /dashboard/analytics         Detailed analytics (FAQ chart, radar, tables)
+  /dashboard/conversations     Searchable conversation log (detail dialog)
+  /dashboard/feedback          Feedback management (flagged/neg/positive tabs)
+  /dashboard/documents         Knowledge base management (rebuild vector store)
+
+KEY FRONTEND FEATURES:
+
+  CHAT INTERFACE (/chat):
+    - ChatGPT-style UI with message bubbles
+    - Real-time streaming with typing indicator
+    - Source citations displayed under each answer
+    - Confidence score badge (color-coded)
+    - Thumbs up/down feedback buttons
+    - Voice input via Web Speech API
+    - Markdown rendering (code blocks, lists, tables)
+    - Suggested questions for common HR queries
+    - Multiple chat sessions with local persistence
+    - Export conversations as Markdown or CSV
+    - Regenerate last response
+
+  ADMIN DASHBOARD (/dashboard):
+    - Overview stat cards: total questions, active employees, avg response
+      time, accuracy rate
+    - Questions-per-day area chart (last 30 days)
+    - Feedback distribution pie chart
+    - Topic frequency bar chart
+    - Top 10 most active employees table
+    - Recent conversations live feed
+    - Detailed analytics page with FAQ bar chart and AI performance radar
+    - Full searchable, paginated conversation log with detail dialog viewer
+    - Feedback management with tabbed views (flagged, negative, positive)
+    - Document management with vector store rebuild button
+    - Dark/light mode toggle
+    - Responsive design (mobile-first, collapsible sidebar)
+
+  AUTHENTICATION:
+    - Supabase Auth with email/password
+    - SSR cookie-based sessions
+    - Next.js middleware guards /dashboard/* routes
+    - Login page with React Hook Form + Zod validation
+    - Signup page for new admin registration
+
+================================================================================
+8. PROJECT STRUCTURE
+================================================================================
+
+hr-assistant/
+|
+|-- backend/                        PYTHON BACKEND (FastAPI)
+|   |-- main.py                     FastAPI app entry point, CORS, lifespan
+|   |-- config.py                   Pydantic settings (env vars)
+|   |-- requirements.txt            Python dependencies (pinned versions)
+|   |-- Dockerfile                  Backend container
+|   |-- models/
+|   |   |-- schemas.py              Pydantic request/response models
+|   |-- routes/
+|   |   |-- chat.py                 Chat endpoints (sync + streaming SSE)
+|   |   |-- feedback.py             Feedback submission
+|   |   |-- analytics.py            Stats & analytics endpoints
+|   |   |-- documents.py            Document management + logs
+|   |   |-- health.py               Health check
+|   |-- services/
+|   |   |-- supabase_service.py     Supabase client & DB operations
+|   |   |-- openrouter_service.py   OpenRouter LLM integration (sync + stream)
+|   |   |-- analytics_engine.py     Analytics computation logic
+|   |-- rag/
+|       |-- document_loader.py      Load MD/JSON/TXT documents
+|       |-- pipeline.py             RAG pipeline (embed, retrieve, generate)
+|
+|-- frontend/                       NEXT.JS FRONTEND
+|   |-- package.json                Node dependencies
+|   |-- next.config.js              Next.js configuration
+|   |-- tailwind.config.ts          Tailwind theme & animations
+|   |-- tsconfig.json               TypeScript config
+|   |-- Dockerfile                  Frontend container
+|   |-- middleware.ts               Auth route protection
+|   |-- lib/
+|   |   |-- utils.ts                Utilities (cn, formatters, exporters)
+|   |   |-- api.ts                  API client & TypeScript types
+|   |   |-- supabase-browser.ts     Browser Supabase client
+|   |   |-- supabase-server.ts      Server Supabase client
+|   |-- hooks/
+|   |   |-- use-chat.ts             Chat state management hook
+|   |-- components/
+|   |   |-- ui/                     shadcn/ui components (12+)
+|   |   |-- theme-toggle.tsx        Dark/light mode toggle
+|   |-- app/
+|       |-- layout.tsx              Root layout with providers
+|       |-- providers.tsx           Theme, Query, Toast providers
+|       |-- globals.css             Global styles & animations
+|       |-- page.tsx                Landing page
+|       |-- login/page.tsx          Login with form validation
+|       |-- signup/page.tsx         Signup page
+|       |-- chat/page.tsx           ChatGPT-style chat interface
+|       |-- dashboard/
+|           |-- layout.tsx          Dashboard sidebar & auth guard
+|           |-- page.tsx            Overview with stats & charts
+|           |-- analytics/page.tsx  Detailed analytics
+|           |-- conversations/      Conversation log
+|           |-- feedback/           Feedback management
+|           |-- documents/          Knowledge base management
+|
+|-- documents/                      HR POLICY DOCUMENTS (Knowledge Base)
+|   |-- leave_policy.md / .json     Leave policy document
+|   |-- office_hours.md / .json     Office hours document
+|   |-- project_management.md/.json Project management document
+|
+|-- supabase/
+|   |-- schema.sql                  Database schema (tables, indexes, RLS,
+|                                   triggers) — run in Supabase SQL editor
+|
+|-- docker-compose.yml              Multi-service orchestration
+|-- .env.example                    Environment variable template
+|-- .gitignore                      Git ignore rules
+|-- README.md                       Project documentation
+|-- LICENSE                         MIT License
+|-- pyproject.toml                  Python project config (uv)
+|-- package.json                    Root package.json
+
+================================================================================
+9. KEY FEATURES (DETAILED)
+================================================================================
+
+A. AI CHAT INTERFACE
+   - Streaming responses: Real-time token-by-token AI answers using SSE
+   - RAG-powered: Answers grounded in company HR documents, not hallucinated
+   - Source citations: Each answer shows source document, section, relevance
+   - Confidence scoring: AI responses include confidence percentage
+   - Voice input: Web Speech API integration for hands-free questions
+   - Markdown rendering: Rich formatted responses (code, lists, tables)
+   - Chat sessions: Multiple conversations with local persistence
+   - Suggested questions: Pre-built prompts for common HR queries
+   - Export: Download conversations as Markdown or CSV
+   - Regenerate: Re-ask the last question for a new response
+
+B. HR ANALYTICS DASHBOARD
+   - Overview: Stat cards (total questions, active employees, avg response
+     time, accuracy rate)
+   - Charts: Questions-per-day area chart, feedback pie, topic bar chart
+   - Employee activity: Top 10 most active employees with question counts
+   - Recent conversations: Live feed of latest employee questions
+   - Analytics page: FAQ bar chart, AI performance radar, activity table
+   - Conversations: Full searchable, paginated log with detail dialog
+   - Feedback: Tabbed view (flagged, negative, positive) for HR review
+   - Documents: Knowledge base management with vector store rebuild
+
+C. AUTHENTICATION & SECURITY
+   - Supabase Auth: Email/password with session management
+   - Route protection: Next.js middleware guards /dashboard/* routes
+   - Row Level Security: Supabase RLS policies on all tables
+   - Admin dashboard: Separate authenticated area for HR personnel
+   - CORS: Configurable allowed origins
+   - Rate limiting: Configurable requests per minute
+
+D. AI/ML PIPELINE
+   - Local embeddings: all-MiniLM-L6-v2 (no API needed for embeddings)
+   - Vector search: ChromaDB with cosine similarity
+   - Configurable: chunk size, overlap, top-k results, embedding model
+   - Rebuildable: Vector store can be rebuilt from documents anytime
+   - Multi-format: Supports Markdown, JSON, and TXT documents
+
+================================================================================
+10. INSTALLATION & SETUP GUIDE
+================================================================================
+
+PREREQUISITES:
+  - Node.js 18+ and npm
+  - Python 3.11+
+  - Docker & Docker Compose (optional, for containerized deployment)
+  - A Supabase project (free tier at https://supabase.com)
+  - An OpenRouter API key (free at https://openrouter.ai)
+
+STEP 1: CLONE THE REPOSITORY
+  git clone https://github.com/Shazia-Amir/AI-HR-Assistant.git
+  cd AI-HR-Assistant
+
+STEP 2: ENVIRONMENT SETUP
+  Copy the example env file and fill in your credentials:
+    cp .env.example .env
+
+  Required variables:
+    # Supabase
+    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+    SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+    # OpenRouter
+    OPENROUTER_API_KEY=your-openrouter-api-key
+    OPENROUTER_MODEL=deepseek/deepseek-chat-v3-0324
+
+    # Backend
+    BACKEND_HOST=0.0.0.0
+    BACKEND_PORT=8000
+    CORS_ORIGINS=http://localhost:3000
+
+    # RAG
+    CHUNK_SIZE=1000
+    CHUNK_OVERLAP=200
+    TOP_K_RESULTS=5
+    EMBEDDING_MODEL=all-MiniLM-L6-v2
+    VECTOR_STORE_PATH=./vectorstore
+
+STEP 3: DATABASE SETUP
+  - Go to your Supabase project dashboard
+  - Open the SQL Editor
+  - Copy and paste the contents of supabase/schema.sql
+  - Execute the query
+  - This creates all tables, indexes, RLS policies, and triggers
+
+STEP 4: BACKEND SETUP
+  cd backend
+  python -m venv venv
+
+  # Activate virtual environment:
+  #   Windows:  venv\Scripts\activate
+  #   Mac/Linux: source venv/bin/activate
+
+  pip install -r requirements.txt
+  uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+  Backend will be available at http://localhost:8000
+  API docs at http://localhost:8000/docs
+
+STEP 5: FRONTEND SETUP
+  cd frontend
+  npm install
+  npm run dev
+
+  Frontend will be available at http://localhost:3000
+
+STEP 6: DOCKER (OPTIONAL — RUN BOTH WITH ONE COMMAND)
+  docker-compose up --build
+
+  This starts:
+    - Backend container on port 8000
+    - Frontend container on port 3000
+
+================================================================================
+11. CONFIGURATION OPTIONS
+================================================================================
+
+All configuration is done via environment variables in the .env file:
+
+  VARIABLE                    DEFAULT                    DESCRIPTION
+  --------                    -------                    -----------
+  OPENROUTER_API_KEY          (required)                API key from openrouter.ai
+  OPENROUTER_MODEL            deepseek/deepseek-...     LLM model to use
+  OPENROUTER_BASE_URL         https://openrouter.ai/..  API base URL
+  NEXT_PUBLIC_SUPABASE_URL    (required)                Supabase project URL
+  NEXT_PUBLIC_SUPABASE_ANON_KEY (required)              Supabase anon key
+  SUPABASE_SERVICE_ROLE_KEY   (required)                Supabase service role key
+  BACKEND_HOST                0.0.0.0                   Server host
+  BACKEND_PORT                8000                      Server port
+  CORS_ORIGINS                http://localhost:3000     Allowed origins (comma-sep)
+  RATE_LIMIT_PER_MINUTE       60                        Max requests per minute
+  CHUNK_SIZE                  1000                      Text chunk size (chars)
+  CHUNK_OVERLAP               200                       Overlap between chunks
+  TOP_K_RESULTS               5                         Number of chunks to retrieve
+  EMBEDDING_MODEL             all-MiniLM-L6-v2          Sentence transformer model
+  VECTOR_STORE_PATH           ./vectorstore             ChromaDB persist directory
+  DOCUMENTS_DIR               ./documents               HR documents folder
+
+================================================================================
+12. HR DOCUMENTS (KNOWLEDGE BASE)
+================================================================================
+
+The system comes with 3 sample HR policy documents in /documents folder:
+
+  1. leave_policy.md / .json
+     - Annual leave, sick leave, casual leave policies
+     - Leave application process and approval workflow
+     - Leave carry-forward rules
+
+  2. office_hours.md / .json
+     - Working hours and flexible timing
+     - Remote work policy
+     - Attendance and punctuality rules
+
+  3. project_management.md / .json
+     - Project lifecycle and methodology
+     - Roles and responsibilities
+     - Reporting and documentation standards
+
+To add new HR documents:
+  - Place .md, .json, or .txt files in the /documents folder
+  - Call POST /documents/rebuild to rebuild the vector store
+  - Or restart the backend (auto-detects new documents)
+
+================================================================================
+13. SECURITY IMPLEMENTATION
+================================================================================
+
+  - Environment variables: All secrets stored in .env (gitignored)
+  - Supabase RLS: Row Level Security on all database tables
+  - Service role key: Used only by backend (bypasses RLS)
+  - CORS: Configurable allowed origins (no wildcard with credentials)
+  - Rate limiting: slowapi middleware (configurable per-minute limit)
+  - Input validation: Pydantic models validate all API inputs
+  - Auth middleware: Next.js middleware protects /dashboard/* routes
+  - Session management: Supabase SSR cookie-based sessions
+  - Error handling: Global exception handler prevents info leakage
+
+================================================================================
+14. TROUBLESHOOTING
+================================================================================
+
+  PROBLEM                        SOLUTION
+  -------                        --------
+  RAG pipeline fails             Ensure /documents has .md or .json files.
+                                 Pipeline defers init but API still works.
+
+  ChromaDB errors                Delete /vectorstore folder and restart
+                                 backend. It rebuilds on next request.
+
+  Supabase connection refused    Check NEXT_PUBLIC_SUPABASE_URL and
+                                 NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.
+                                 Ensure Supabase project is active.
+
+  OpenRouter 401 Unauthorized    Verify OPENROUTER_API_KEY is valid.
+                                 Get free key at openrouter.ai.
+
+  CORS errors in browser         Add frontend URL to CORS_ORIGINS in .env.
+
+  npm run dev fails              Delete node_modules/ and package-lock.json,
+                                 then run npm install again.
+
+  Python dependency conflicts    Create fresh venv: python -m venv venv,
+                                 activate, and reinstall.
+
+  Port already in use            Change BACKEND_PORT in .env or kill the
+                                 process using that port.
+
+================================================================================
+15. DEVELOPMENT WORKFLOW
+================================================================================
+
+  1. Fork the repository on GitHub
+  2. Clone your fork: git clone <your-fork-url>
+  3. Create a feature branch: git checkout -b feature/your-feature
+  4. Make your changes
+  5. Commit: git commit -m 'Add some feature'
+  6. Push: git push origin feature/your-feature
+  7. Open a Pull Request on GitHub
+
+BACKEND DEVELOPMENT:
+  - API docs auto-generated at /docs (Swagger UI)
+  - Hot reload with --reload flag
+  - All models validated with Pydantic
+  - Routes are modular (each in separate file)
+
+FRONTEND DEVELOPMENT:
+  - Hot reload with npm run dev
+  - TypeScript for type safety
+  - shadcn/ui components in /components/ui/
+  - API types defined in /lib/api.ts
+  - Chat logic in /hooks/use-chat.ts
+
+================================================================================
+16. FUTURE ENHANCEMENTS
+================================================================================
+
+  - Multi-language support (Urdu, Arabic, etc.)
+  - Document upload via UI (currently file-based)
+  - Chat bot widget embeddable on other pages
+  - Email notifications for flagged conversations
+  - AI accuracy improvements with fine-tuned embeddings
+  - Slack/Microsoft Teams integration
+  - Voice-to-voice conversation (speech-to-text + text-to-speech)
+  - Bulk document import from PDF/DOCX
+  - Role-based access control (employee vs HR vs admin)
+  - Conversation sentiment analysis
+  - Automated HR report generation (PDF/Excel)
+
+================================================================================
+17. ACKNOWLEDGMENTS
+================================================================================
+
+  - OpenRouter (https://openrouter.ai) — LLM API provider
+  - Supabase (https://supabase.com) — Database & Auth
+  - LangChain (https://langchain.com) — RAG framework
+  - ChromaDB (https://chromadb.com) — Vector database
+  - sentence-transformers — Embedding models
+  - Next.js (https://nextjs.org) — React framework
+  - FastAPI (https://fastapi.tiangolo.com) — Python API framework
+  - shadcn/ui (https://ui.shadcn.com) — UI components
+  - Recharts (https://recharts.org) — Charting library
+
+================================================================================
+18. CONTACT
+================================================================================
+
+  Author:   Shazia Amir
+  GitHub:   https://github.com/Shazia-Amir
+  Repo:     https://github.com/Shazia-Amir/AI-HR-Assistant
+  License:  MIT (see LICENSE file)
+
+================================================================================
+                    END OF PROJECT SUMMARY
+================================================================================
