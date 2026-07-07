@@ -37,6 +37,7 @@ interface ChatSession {
 }
 
 export default function ChatPage() {
+  const [mounted, setMounted] = useState(false);
   const [employeeName, setEmployeeName] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [showIdentity, setShowIdentity] = useState(true);
@@ -80,6 +81,7 @@ export default function ChatPage() {
       setEmployeeId(savedId);
       setShowIdentity(false);
     }
+    setMounted(true);
   }, []);
 
   const saveSession = useCallback((sessionId: string, msgs: ChatMessage[]) => {
@@ -202,8 +204,13 @@ export default function ChatPage() {
   };
 
   const handleVoiceInput = () => {
-    if (typeof window === "undefined" || !("webkitSpeechRecognition" in window)) {
-      toast.error("Voice input not supported in this browser");
+    if (typeof window === "undefined") return;
+
+    const SpeechRecognitionCtor: typeof SpeechRecognition | undefined =
+      window.SpeechRecognition ?? window.webkitSpeechRecognition;
+
+    if (!SpeechRecognitionCtor) {
+      toast.error("Voice input is not supported in this browser. Try Chrome or Edge.");
       return;
     }
 
@@ -213,14 +220,13 @@ export default function ChatPage() {
       return;
     }
 
-    const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionCtor();
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
-    recognition.onresult = (event: { results: { 0: { transcript: string } } }) => {
-      const transcript = event.results[0].transcript;
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0][0].transcript;
       setInput(transcript);
     };
 
@@ -238,6 +244,15 @@ export default function ChatPage() {
   const filteredSessions = sessions.filter((s) =>
     s.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Prevent SSR/client mismatch — don't render until localStorage has been read
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background via-background to-muted/20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (showIdentity) {
     return (
