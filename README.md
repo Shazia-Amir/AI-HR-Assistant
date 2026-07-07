@@ -1,6 +1,15 @@
 # AI HR Assistant — SaaS Platform
 
-A production-ready, full-stack AI HR Assistant that answers employee questions about company policies using Retrieval-Augmented Generation (RAG). Built with a FastAPI backend, Next.js 15 frontend, Supabase for data/auth, and OpenRouter for LLM inference.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688)](https://fastapi.tiangolo.com/)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue)](https://www.python.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green)](https://supabase.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)](https://www.docker.com/)
+
+> A production-ready, full-stack AI HR Assistant that answers employee questions about company policies using Retrieval-Augmented Generation (RAG). Built with a FastAPI backend, Next.js 15 frontend, Supabase for data/auth, and OpenRouter for LLM inference.
+
+---
 
 ## Features
 
@@ -243,6 +252,35 @@ Dark/light mode toggle using `next-themes` with CSS variables. All components su
 - **Markdown** — Full conversation export with role labels
 - **CSV** — Structured data export for spreadsheet analysis
 
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| **RAG pipeline fails to initialize** | Ensure `documents/` folder has `.md` or `.json` files. The pipeline will defer init but the API still works. |
+| **ChromaDB errors** | Delete `vectorstore/` folder and restart backend. It will rebuild on next request. |
+| **Supabase connection refused** | Double-check `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env`. Ensure your Supabase project is active. |
+| **OpenRouter 401 Unauthorized** | Verify `OPENROUTER_API_KEY` is valid. Get a free key at [openrouter.ai](https://openrouter.ai/). |
+| **CORS errors in browser** | Add your frontend URL to `CORS_ORIGINS` in `.env`. Default: `http://localhost:3000`. |
+| **`npm run dev` fails** | Delete `node_modules/` and `package-lock.json`, then run `npm install` again. |
+| **Python dependency conflicts** | Use a fresh virtual environment: `python -m venv venv` and reinstall. |
+| **Port already in use** | Change `BACKEND_PORT` in `.env` or kill the process: `lsof -i :8000` (Mac/Linux) / `netstat -ano | findstr :8000` (Windows). |
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/your-feature-name`
+3. Commit your changes: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin feature/your-feature-name`
+5. Open a Pull Request
+
 ## License
 
-MIT License — see LICENSE file for details.
+MIT License — see [LICENSE](LICENSE) file for details.
+
+## Author
+
+**Shazia Amir** — [GitHub @Shazia-Amir](https://github.com/Shazia-Amir)
+
+---
+
+Built with FastAPI, Next.js, Supabase, OpenRouter & ChromaDB.

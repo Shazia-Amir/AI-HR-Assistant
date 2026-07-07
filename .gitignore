@@ -42,3 +42,18 @@ npm-debug.log*
 
 # Docker
 docker-compose.override.yml
+
+# Replit
+.replit
+replit.md
+replit.nix
+attached_assets/
+
+# Build artifacts
+*.tsbuildinfo
+*.zip
+
+# Replit local state
+.local/
+.agents/
+.config/
